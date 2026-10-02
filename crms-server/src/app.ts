@@ -1,0 +1,18 @@
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
+import { env } from './config/env.js';
+import routes from './app/routes/index.js';
+import notFound from './app/middlewares/notFound.js';
+import globalErrorHandler from './app/middlewares/globalErrorHandler.js';
+const app = express();
+app.use(helmet());
+app.use(cors({ origin: env.clientUrl }));
+app.use(express.json());
+app.use(morgan('dev'));
+app.get('/', (_req, res) => res.json({ message: 'CRMS API' }));
+app.use('/api', routes);
+app.use(notFound);
+app.use(globalErrorHandler);
+export default app;

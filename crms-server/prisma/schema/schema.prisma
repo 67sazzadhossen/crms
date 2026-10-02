@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client"
+  output = "../generated/prisma"
+}
+datasource db {
+  provider = "postgresql"
+}
+model ClientCompany {
+  id String @id @default(uuid())
+  name String
+  billingTier String?
+  monthlyQuotaHrs Float @default(0)
+  status String @default("ACTIVE")
+  users User[]
+  reservations Reservation[]
+  usageLogs UsageLog[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model User {
+  id String @id @default(uuid())
+  email String @unique
+  name String
+  role String @default("MEMBER")
+  companyId String
+  company ClientCompany @relation(fields: [companyId], references: [id])
+  reservations Reservation[]
+  createdAt DateTime @default(now())
+}
+model ConferenceRoom {
+  id String @id @default(uuid())
+  name String
+  capacity Int
+  equipmentList String[] @default([])
+  hourlyRate Float @default(0)
+  isActive Boolean @default(true)
+  reservations Reservation[]
+  createdAt DateTime @default(now())
+}
+model Reservation {
+  id String @id @default(uuid())
+  clientId String
+  userId String
+  roomId String
+  type String
+  status String @default("PENDING")
+  scheduledStart DateTime
+  scheduledEnd DateTime
+  actualCheckIn DateTime?
+  actualCheckOut DateTime?
+  client ClientCompany @relation(fields: [clientId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+  room ConferenceRoom @relation(fields: [roomId], references: [id])
+  usageLog UsageLog?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([roomId, scheduledStart, scheduledEnd])
+}
+model UsageLog {
+  id String @id @default(uuid())
+  reservationId String @unique
+  clientId String
+  startTime DateTime
+  endTime DateTime?
+  billableMins Int @default(0)
+  overstayed Boolean @default(false)
+  reservation Reservation @relation(fields: [reservationId], references: [id])
+  client ClientCompany @relation(fields: [clientId], references: [id])
+  createdAt DateTime @default(now())
+}
