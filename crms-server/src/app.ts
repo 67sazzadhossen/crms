@@ -12,7 +12,7 @@ app.use(cors({ origin: env.clientUrl }));
 app.use(express.json());
 app.use(morgan('dev'));
 app.get('/', (_req, res) => res.json({ message: 'CRMS API' }));
-app.use('/api', routes);
+app.use('/api/v1', routes);
 app.use(notFound);
 app.use(globalErrorHandler);
 export default app;
