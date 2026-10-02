@@ -1,0 +1,56 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: crms
+    ports:
+      - '5434:5432'
+    volumes:
+      - crms-postgres-dev-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d crms']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  server:
+    image: node:22-alpine
+    working_dir: /app
+    environment:
+      NODE_ENV: development
+      PORT: 5000
+      CLIENT_URL: http://localhost:3000
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/crms
+      SHADOW_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/crms_shadow
+    ports:
+      - '5000:5000'
+    volumes:
+      - ./crms-server:/app
+      - crms-server-node-modules:/app/node_modules
+    command: sh -c "npm ci && npm run prisma:generate && npm run dev"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  client:
+    image: node:22-alpine
+    working_dir: /app
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:5000/api
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./crms-client:/app
+      - crms-client-node-modules:/app/node_modules
+      - crms-client-next:/app/.next
+    command: sh -c "npm ci && npm run dev -- --hostname 0.0.0.0"
+    depends_on:
+      - server
+
+volumes:
+  crms-postgres-dev-data:
+  crms-server-node-modules:
+  crms-client-node-modules:
+  crms-client-next:

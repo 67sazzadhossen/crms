@@ -1,12 +1,16 @@
-import type { Request, Response } from 'express';
+import status from 'http-status';
 import catchAsync from '../../../shared/catchAsync.js';
 import sendResponse from '../../../shared/sendResponse.js';
 
-export const healthController = catchAsync((_req: Request, res: Response) => {
-  return sendResponse(res, {
-    statusCode: 200,
+const healthCheck = catchAsync(async (_req, res) => {
+  sendResponse(res, {
+    statusCode: status.OK,
     success: true,
     message: 'CRMS API is healthy',
     data: { service: 'crms-server', timestamp: new Date().toISOString() },
   });
 });
+
+export const HealthController = {
+  healthCheck,
+};

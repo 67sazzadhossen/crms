@@ -1,0 +1,49 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: crms
+    ports:
+      - '5432:5432'
+    volumes:
+      - crms-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d crms']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  server:
+    build:
+      context: ./crms-server
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      CLIENT_URL: http://localhost:3000
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/crms
+      SHADOW_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/crms_shadow
+    ports:
+      - '5000:5000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  client:
+    build:
+      context: ./crms-client
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:5000/api
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:5000/api
+    ports:
+      - '3000:3000'
+    depends_on:
+      - server
+
+volumes:
+  crms-postgres-data:
