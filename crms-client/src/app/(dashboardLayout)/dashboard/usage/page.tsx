@@ -12,17 +12,21 @@ import {
   type Reservation,
 } from '../../../../redux/features/reservations/reservationsApi';
 import { useAppSelector } from '../../../../redux/hook';
+import { getAuditLogs, type AuditLog } from '../../../../redux/features/usage/auditApi';
 
 export default function UsagePage() {
   const token = useAppSelector((s) => s.auth.token);
   const user = useAppSelector((s) => s.auth.user);
+  const quota = user?.monthlyQuotaHrs ?? 20;
   const [logs, setLogs] = useState<UsageLog[]>([]);
   const [query, setQuery] = useState('');
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [allUsers, setAllUsers] = useState<UsageUser[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   useEffect(() => {
     if (token) {
       getUsage(token).then(setLogs);
+      if (user?.role === 'ADMIN') getAuditLogs(token).then(setAuditLogs);
       if (user?.role === 'ADMIN') {
         getUsageUsers(token).then(setAllUsers);
         getReservations(token).then(setReservations);
@@ -61,15 +65,49 @@ export default function UsagePage() {
           ? reservations.filter((r) => r.user?.email === value.email).length
           : userLogs.length,
         hours,
-        remaining: Math.max(0, 20 - hours),
+        remaining: Math.max(0, quota - hours),
       };
     });
+  function download(format: 'csv' | 'json') {
+    const rows = users.map((item) => ({
+      name: item.name,
+      email: item.email,
+      meetings: item.meetings,
+      usedHours: Number(item.hours.toFixed(2)),
+      remainingHours: Number(item.remaining.toFixed(2)),
+    }));
+    const content =
+      format === 'json'
+        ? JSON.stringify(rows, null, 2)
+        : [
+            'Name,Email,Meetings,Used Hours,Remaining Hours',
+            ...rows.map((row) =>
+              [row.name, row.email, row.meetings, row.usedHours, row.remainingHours]
+                .map((value) => `"${String(value).replaceAll('"', '""')}"`)
+                .join(','),
+            ),
+          ].join('\n');
+    const blob = new Blob([content], { type: format === 'json' ? 'application/json' : 'text/csv' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `crms-usage.${format}`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }
   return (
     <main className="dashboard-main">
       {user?.role === 'ADMIN' && (
         <section className="panel">
           <div className="panel-heading">
             <h3>User usage summary</h3>
+            <div className="export-actions">
+              <button type="button" className="table-action" onClick={() => download('csv')}>
+                Export CSV
+              </button>
+              <button type="button" className="table-action" onClick={() => download('json')}>
+                Export JSON
+              </button>
+            </div>
             <input
               placeholder="Filter by name or email"
               value={query}
@@ -100,6 +138,36 @@ export default function UsagePage() {
               </tbody>
             </table>
             {users.length === 0 && <p className="muted">No completed usage sessions yet.</p>}
+          </div>
+        </section>
+      )}
+      {user?.role === 'ADMIN' && (
+        <section className="panel">
+          <div className="panel-heading">
+            <h3>Audit log</h3>
+          </div>
+          <div className="reservation-table-wrap">
+            <table className="reservation-table">
+              <thead>
+                <tr>
+                  <th>Action</th>
+                  <th>Entity</th>
+                  <th>Entity ID</th>
+                  <th>Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                {auditLogs.map((log) => (
+                  <tr key={log.id}>
+                    <td>{log.action}</td>
+                    <td>{log.entityType}</td>
+                    <td>{log.entityId}</td>
+                    <td>{new Date(log.createdAt).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {auditLogs.length === 0 && <p className="muted">No audit activity yet.</p>}
           </div>
         </section>
       )}

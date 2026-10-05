@@ -47,6 +47,11 @@ export const ReservationService = {
     });
     if (conflict)
       throw new ApiError(409, 'Room is already reserved for this time', 'ROOM_CONFLICT');
+    const maintenance = await prisma.maintenanceSchedule.findFirst({
+      where: { roomId: data.roomId, startTime: { lt: end }, endTime: { gt: start } },
+    });
+    if (maintenance)
+      throw new ApiError(409, 'Room is under maintenance during this time', 'ROOM_MAINTENANCE');
     const reservation = await prisma.reservation.create({
       data: {
         userId: data.userId ?? userId,

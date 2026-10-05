@@ -27,6 +27,7 @@ export default function DashboardPage() {
     .filter((item) => new Date(item.scheduledEnd) > new Date() && item.status !== 'CANCELLED')
     .slice(0, 5);
   const usedHours = usage.reduce((sum, item) => sum + item.billableMins, 0) / 60;
+  const completedCount = reservations.filter((item) => item.status === 'COMPLETED').length;
   return (
     <main className="dashboard-main">
       <section className="stat-grid">
@@ -46,6 +47,53 @@ export default function DashboardPage() {
           <span>Active conference rooms</span>
         </article>
       </section>
+      {user?.role === 'ADMIN' && (
+        <section className="panel analytics-panel">
+          <div className="panel-heading">
+            <div>
+              <p className="panel-kicker">Admin analytics</p>
+              <h2>Workspace performance</h2>
+            </div>
+          </div>
+          <div className="reservation-table-wrap">
+            <table className="reservation-table">
+              <thead>
+                <tr>
+                  <th>Room</th>
+                  <th>Total bookings</th>
+                  <th>Completed sessions</th>
+                  <th>Occupancy</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rooms.map((room) => {
+                  const roomReservations = reservations.filter(
+                    (item) => item.room?.name === room.name,
+                  );
+                  const completed = roomReservations.filter(
+                    (item) => item.status === 'COMPLETED',
+                  ).length;
+                  const occupancy = roomReservations.length
+                    ? Math.min(100, Math.round((completed / roomReservations.length) * 100))
+                    : 0;
+                  return (
+                    <tr key={room.id}>
+                      <td>{room.name}</td>
+                      <td>{roomReservations.length}</td>
+                      <td>{completed}</td>
+                      <td>{occupancy}%</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <p className="muted">
+            Total completed sessions: {completedCount} · Total tracked usage: {usedHours.toFixed(2)}{' '}
+            hours
+          </p>
+        </section>
+      )}
       <section className="dashboard-grid">
         <article className="panel occupancy-panel">
           <div className="panel-heading">

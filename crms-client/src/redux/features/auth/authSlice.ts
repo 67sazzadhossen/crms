@@ -1,5 +1,12 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-type User = { id: string; name: string; email: string; role: string } | null;
+type User = {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  companyId?: string;
+  monthlyQuotaHrs?: number;
+} | null;
 const authSlice = createSlice({
   name: 'auth',
   initialState: { user: null as User, token: null as string | null },

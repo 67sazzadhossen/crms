@@ -4,9 +4,10 @@ export default function ProfilePage() {
   const user = useAppSelector((s) => s.auth.user);
   return (
     <main className="dashboard-main">
-      <section className="panel profile-card">
+      <section className="panel profile-card profile-page-card">
         <p className="panel-kicker">Account</p>
         <h2>Profile</h2>
+        <p className="profile-intro">Manage your account information and workspace access.</p>
         <div className="profile-details">
           <div>
             <span>Name</span>

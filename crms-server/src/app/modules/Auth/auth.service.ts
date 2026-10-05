@@ -35,6 +35,7 @@ export const AuthService = {
         name: user.name,
         role: user.role,
         companyId: user.companyId,
+        monthlyQuotaHrs: user.company.monthlyQuotaHrs,
       },
       accessToken: jwt.sign({ userId: user.id, role: user.role }, env.jwtSecret, {
         expiresIn: env.jwtExpiresIn as jwt.SignOptions['expiresIn'],
@@ -44,6 +45,7 @@ export const AuthService = {
   async login(identifier: string, password: string) {
     const user = await prisma.user.findFirst({
       where: { OR: [{ email: identifier }, { phone: identifier }] },
+      include: { company: true },
     });
     if (!user || !(await bcrypt.compare(password, user.passwordHash)))
       throw new ApiError(401, 'Invalid email, phone, or password');
@@ -54,6 +56,7 @@ export const AuthService = {
         name: user.name,
         role: user.role,
         companyId: user.companyId,
+        monthlyQuotaHrs: user.company.monthlyQuotaHrs,
       },
       accessToken: jwt.sign({ userId: user.id, role: user.role }, env.jwtSecret, {
         expiresIn: env.jwtExpiresIn as jwt.SignOptions['expiresIn'],

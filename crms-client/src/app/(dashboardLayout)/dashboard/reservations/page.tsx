@@ -5,6 +5,10 @@ import { getRooms, type Room } from '../../../../redux/features/rooms/roomsApi';
 import {
   createReservation,
   cancelReservation,
+  instantReservation,
+  checkInReservation,
+  checkOutReservation,
+  extendReservation,
   getReservations,
   type Reservation,
 } from '../../../../redux/features/reservations/reservationsApi';
@@ -28,7 +32,21 @@ export default function ReservationsPage() {
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [filterDate, setFilterDate] = useState('');
   const [targetUserId, setTargetUserId] = useState('');
+  const [capacityFilter, setCapacityFilter] = useState('');
+  const [equipmentFilter, setEquipmentFilter] = useState('');
   const [bookingOpen, setBookingOpen] = useState(false);
+  const [instantRoom, setInstantRoom] = useState<string | null>(null);
+  const [instantMinutes, setInstantMinutes] = useState<15 | 30 | 45 | 60>(30);
+  const filteredRooms = rooms.filter(
+    (room) =>
+      (!capacityFilter || room.capacity >= Number(capacityFilter)) &&
+      (!equipmentFilter ||
+        room.equipmentList.some((item) =>
+          item.toLowerCase().includes(equipmentFilter.toLowerCase()),
+        )),
+  );
+  const timelineDate = filterDate || new Date().toISOString().slice(0, 10);
+  const timelineSlots = Array.from({ length: 16 }, (_, index) => index + 9);
   useEffect(() => {
     if (token) {
       getRooms(token).then(setRooms);
@@ -92,6 +110,44 @@ export default function ReservationsPage() {
       });
     }
   }
+  async function instantBook() {
+    if (!token || !instantRoom) return;
+    try {
+      const created = await instantReservation(token, instantRoom, instantMinutes);
+      setItems([...items, created]);
+      setInstantRoom(null);
+      setToast({
+        type: 'success',
+        message: `Instant booking confirmed for ${instantMinutes} minutes.`,
+      });
+    } catch (e) {
+      setToast({ type: 'error', message: 'This room is currently occupied.' });
+    }
+  }
+  async function updateSession(id: string, action: 'in' | 'out') {
+    if (!token) return;
+    try {
+      if (action === 'in') await checkInReservation(token, id);
+      else await checkOutReservation(token, id);
+      setItems(await getReservations(token));
+      setToast({
+        type: 'success',
+        message: action === 'in' ? 'Checked in successfully.' : 'Checked out successfully.',
+      });
+    } catch {
+      setToast({ type: 'error', message: 'Could not update this session.' });
+    }
+  }
+  async function extend(id: string, minutes: 15 | 30) {
+    if (!token) return;
+    try {
+      await extendReservation(token, id, minutes);
+      setItems(await getReservations(token));
+      setToast({ type: 'success', message: `Meeting extended by ${minutes} minutes.` });
+    } catch {
+      setToast({ type: 'error', message: 'No space before the next reservation.' });
+    }
+  }
   return (
     <main className="dashboard-main">
       <div className="panel-heading">
@@ -107,6 +163,36 @@ export default function ReservationsPage() {
           <button type="button" onClick={() => setToast(null)}>
             ×
           </button>
+        </div>
+      )}
+      {instantRoom && (
+        <div className="booking-modal-backdrop" onClick={() => setInstantRoom(null)}>
+          <div className="panel instant-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-title">
+              <h3>Instant booking</h3>
+              <button type="button" className="modal-cancel" onClick={() => setInstantRoom(null)}>
+                Cancel
+              </button>
+            </div>
+            <p className="muted">Start using this room immediately.</p>
+            <div className="instant-options">
+              {([15, 30, 45, 60] as const).map((minutes) => (
+                <button
+                  type="button"
+                  className={
+                    instantMinutes === minutes ? 'instant-option selected' : 'instant-option'
+                  }
+                  key={minutes}
+                  onClick={() => setInstantMinutes(minutes)}
+                >
+                  {minutes} min
+                </button>
+              ))}
+            </div>
+            <button type="button" className="book-button" onClick={instantBook}>
+              Start instant booking
+            </button>
+          </div>
         </div>
       )}
       {bookingOpen && (
@@ -142,7 +228,7 @@ export default function ReservationsPage() {
                         required
                       >
                         <option value="">Choose a room</option>
-                        {rooms.map((room) => (
+                        {filteredRooms.map((room) => (
                           <option key={room.id} value={room.id}>
                             {room.name}
                           </option>
@@ -189,7 +275,32 @@ export default function ReservationsPage() {
       <section className="panel">
         <div className="panel-heading">
           <h3>Room availability</h3>
-          <input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
+          <div className="room-filters">
+            <input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
+            <input
+              type="number"
+              min="1"
+              placeholder="Min seats"
+              value={capacityFilter}
+              onChange={(e) => setCapacityFilter(e.target.value)}
+            />
+            <input
+              placeholder="Equipment"
+              value={equipmentFilter}
+              onChange={(e) => setEquipmentFilter(e.target.value)}
+            />
+            <button
+              type="button"
+              className="table-action"
+              onClick={() => {
+                setFilterDate('');
+                setCapacityFilter('');
+                setEquipmentFilter('');
+              }}
+            >
+              Clear
+            </button>
+          </div>
         </div>
         <table className="reservation-table">
           <thead>
@@ -202,7 +313,7 @@ export default function ReservationsPage() {
             </tr>
           </thead>
           <tbody>
-            {rooms.map((room) => {
+            {filteredRooms.map((room) => {
               const dayItems = items.filter(
                 (item) =>
                   item.room?.name === room.name &&
@@ -242,12 +353,82 @@ export default function ReservationsPage() {
                     >
                       Book now
                     </button>
+                    <button
+                      type="button"
+                      className="table-action instant-action"
+                      disabled={dayItems.length > 0}
+                      onClick={() => setInstantRoom(room.id)}
+                    >
+                      Instant
+                    </button>
                   </td>
                 </tr>
               );
             })}
           </tbody>
         </table>
+      </section>
+      <section className="panel timeline-panel">
+        <div className="panel-heading">
+          <div>
+            <p className="panel-kicker">Timeline</p>
+            <h3>Room schedule</h3>
+          </div>
+          <span className="muted">{timelineDate}</span>
+        </div>
+        <div className="timeline-wrap">
+          <table className="timeline-table">
+            <thead>
+              <tr>
+                <th>Room</th>
+                {timelineSlots.map((hour) => (
+                  <th key={hour}>{String(hour).padStart(2, '0')}:00</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filteredRooms.map((room) => (
+                <tr key={room.id}>
+                  <td>
+                    <strong>{room.name}</strong>
+                  </td>
+                  {timelineSlots.map((hour) => {
+                    const slotStart = new Date(
+                      `${timelineDate}T${String(hour).padStart(2, '0')}:00:00`,
+                    );
+                    const busy = items.some(
+                      (item) =>
+                        item.room?.name === room.name &&
+                        item.status !== 'CANCELLED' &&
+                        new Date(item.scheduledStart) <
+                          new Date(slotStart.getTime() + 30 * 60000) &&
+                        new Date(item.scheduledEnd) > slotStart,
+                    );
+                    return (
+                      <td key={hour} className={busy ? 'timeline-busy' : 'timeline-free'}>
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => {
+                            setForm({
+                              ...form,
+                              roomId: room.id,
+                              scheduledStart: `${timelineDate}T${String(hour).padStart(2, '0')}:00`,
+                              scheduledEnd: `${timelineDate}T${String(hour).padStart(2, '0')}:30`,
+                            });
+                            setBookingOpen(true);
+                          }}
+                        >
+                          {busy ? 'Booked' : 'Free'}
+                        </button>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </section>
       <section className="panel">
         <h3>{currentUser?.role === 'ADMIN' ? 'All reservations' : 'Your reservations'}</h3>
@@ -276,6 +457,42 @@ export default function ReservationsPage() {
                       <em>{item.status}</em>
                     </td>
                     <td>
+                      {item.status === 'CONFIRMED' && (
+                        <button
+                          type="button"
+                          className="table-action"
+                          onClick={() => updateSession(item.id, 'in')}
+                        >
+                          Check in
+                        </button>
+                      )}
+                      {item.status === 'CHECKED_IN' && (
+                        <button
+                          type="button"
+                          className="table-action"
+                          onClick={() => updateSession(item.id, 'out')}
+                        >
+                          Check out
+                        </button>
+                      )}
+                      {item.status === 'CHECKED_IN' && (
+                        <>
+                          <button
+                            type="button"
+                            className="table-action"
+                            onClick={() => extend(item.id, 15)}
+                          >
+                            +15 min
+                          </button>
+                          <button
+                            type="button"
+                            className="table-action"
+                            onClick={() => extend(item.id, 30)}
+                          >
+                            +30 min
+                          </button>
+                        </>
+                      )}
                       {item.status !== 'CANCELLED' && item.status !== 'COMPLETED' && (
                         <button
                           type="button"

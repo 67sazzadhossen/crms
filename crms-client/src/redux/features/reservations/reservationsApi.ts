@@ -35,3 +35,21 @@ export const cancelReservation = (token: string, id: string, reason?: string) =>
     headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify({ reason }),
   }).then((response) => response.data);
+export const instantReservation = (token: string, roomId: string, minutes: 15 | 30 | 45 | 60) =>
+  apiRequest<{ data: Reservation }>('/reservations/instant', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ roomId, minutes }),
+  }).then((response) => response.data);
+
+export const checkInReservation = (token: string, id: string) =>
+  apiRequest(`/reservations/${id}/check-in`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+export const checkOutReservation = (token: string, id: string) =>
+  apiRequest(`/reservations/${id}/check-out`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+export const extendReservation = (token: string, id: string, minutes: 15 | 30) => apiRequest<{ data: Reservation }>(`/reservations/${id}/extend`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify({ minutes }) }).then((response) => response.data);

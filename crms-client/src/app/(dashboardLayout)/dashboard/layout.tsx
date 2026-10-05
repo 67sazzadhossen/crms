@@ -2,10 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { logout } from '../../../redux/features/auth/authSlice';
+import { useAppDispatch } from '../../../redux/hook';
 import '../../../styles/dashboard.css';
 
 export default function DashboardLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const pathname = usePathname();
+  const dispatch = useAppDispatch();
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
   return (
@@ -44,7 +47,15 @@ export default function DashboardLayout({ children }: Readonly<{ children: React
           >
             Profile
           </Link>
-          <Link href="/login">Sign out</Link>
+          <button
+            className="sign-out-button"
+            onClick={() => {
+              dispatch(logout());
+              window.location.href = '/login';
+            }}
+          >
+            Sign out
+          </button>
         </nav>
       </aside>
       <div className="dashboard-content">
