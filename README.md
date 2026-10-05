@@ -14,22 +14,6 @@ cd crms-server && npm install && cp .env.example .env && npm run dev
 
 The API health check is available at `GET /api/health`.
 
-## Run the full project with Docker
+## Local development
 
-From the repository root:
-
-```bash
-docker compose up --build
-```
-
-The frontend is available at `http://localhost:3000`, the API at `http://localhost:5000`, and PostgreSQL at `localhost:5432`.
-
-For development with hot reload, use:
-
-```bash
-docker compose -f docker-compose.dev.yml up
-```
-
-Source folders are mounted into the containers, so edits to `crms-client/src` and `crms-server/src` are watched automatically.
-
-The backend generates Prisma Client on startup. Run migrations separately when migration files are available.
+Create a local PostgreSQL database named `crms`, copy `crms-server/.env.example` to `crms-server/.env`, and set `DATABASE_URL` to your local connection string. Then run `npm run prisma:generate`, `npm run prisma:db-push`, and `npm run prisma:seed` from `crms-server`.

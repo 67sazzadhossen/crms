@@ -1,11 +1,139 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+* {
+  box-sizing: border-box;
+}
 body {
   margin: 0;
-  font-family: system-ui, sans-serif;
-  color: #172033;
-  background: #f6f8fb;
+  font-family: 'DM Sans', sans-serif;
+  color: #18202d;
+  background: #f4f7fb;
 }
 main {
   max-width: 1100px;
   margin: 0 auto;
   padding: 3rem 1.5rem;
+}
+.login-page {
+  min-height: 100vh;
+  max-width: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: #f7f9fc;
+}
+.login-hero {
+  padding: 64px 9vw;
+  background: linear-gradient(145deg, #102f53, #176b75);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.brand-mark {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: #d3f36b;
+  color: #102f53;
+  font-weight: 700;
+  font-family: 'Space Grotesk';
+}
+.eyebrow {
+  margin: 30px 0 12px;
+  color: #84d9cf;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 12px;
+  font-weight: 700;
+}
+.login-hero h1 {
+  margin: 0;
+  font-family: 'Space Grotesk';
+  font-size: clamp(42px, 5vw, 72px);
+  line-height: 1.02;
+  letter-spacing: -0.05em;
+}
+.hero-copy {
+  max-width: 390px;
+  color: #c1e3e4;
+  font-size: 17px;
+  line-height: 1.6;
+}
+.login-panel {
+  display: grid;
+  place-items: center;
+  padding: 32px;
+}
+.login-card {
+  width: min(400px, 100%);
+}
+.login-card h2 {
+  margin: 0;
+  font-family: 'Space Grotesk';
+  font-size: 36px;
+  letter-spacing: -0.04em;
+}
+.muted {
+  color: #768398;
+  margin: 12px 0 32px;
+}
+form {
+  display: grid;
+  gap: 18px;
+}
+label {
+  display: grid;
+  gap: 8px;
+  color: #3d4b60;
+  font-size: 13px;
+  font-weight: 600;
+}
+input {
+  border: 1px solid #d9e0e9;
+  border-radius: 10px;
+  padding: 14px 15px;
+  font: inherit;
+  outline: none;
+  background: white;
+}
+input:focus {
+  border-color: #258c91;
+  box-shadow: 0 0 0 3px #d9f3ed;
+}
+button {
+  margin-top: 8px;
+  border: 0;
+  border-radius: 10px;
+  padding: 15px;
+  color: white;
+  background: #123c60;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+button span {
+  float: right;
+  font-size: 20px;
+  line-height: 16px;
+}
+.error {
+  color: #b42318;
+  background: #fff0ee;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+@media (max-width: 760px) {
+  .login-page {
+    grid-template-columns: 1fr;
+  }
+  .login-hero {
+    min-height: 360px;
+    padding: 40px 28px;
+  }
+  .login-panel {
+    padding: 44px 28px;
+  }
 }

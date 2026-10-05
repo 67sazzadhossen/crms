@@ -8,7 +8,7 @@ import notFound from './app/middlewares/notFound.js';
 import globalErrorHandler from './app/middlewares/globalErrorHandler.js';
 const app = express();
 app.use(helmet());
-app.use(cors({ origin: env.clientUrl }));
+app.use(cors({ origin: env.corsAllowedOrigins }));
 app.use(express.json());
 app.use(morgan('dev'));
 app.get('/', (_req, res) => res.json({ message: 'CRMS API' }));

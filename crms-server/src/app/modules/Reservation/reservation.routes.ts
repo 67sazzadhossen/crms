@@ -1,0 +1,13 @@
+import { Router } from 'express';
+import { auth } from '../../middlewares/auth.js';
+import { ReservationController } from './reservation.controller.js';
+const router = Router();
+router.use(auth);
+router.get('/', ReservationController.list);
+router.post('/', ReservationController.create);
+router.post('/instant', ReservationController.instant);
+router.post('/:id/cancel', ReservationController.cancel);
+router.post('/:id/extend', ReservationController.extend);
+router.post('/:id/check-in', ReservationController.checkIn);
+router.post('/:id/check-out', ReservationController.checkOut);
+export default router;
